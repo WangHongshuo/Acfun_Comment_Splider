@@ -1,6 +1,11 @@
 from selenium import webdriver
 import time
 import copy
+from urllib import request
+import json
+import requests
+import os
+import gzip
 
 
 class Comment:
@@ -14,31 +19,33 @@ class Comment:
         self.name
 
 
-def main():
-    url = 'https://www.acfun.cn/a/ac11294787'
-    driver = webdriver.Firefox()
-    driver.get(url)
-    # 加入延时防止获取数据不全
-    time.sleep(5)
-    # 获取盖楼模式的楼顶评论
-    fc_comment_list = driver.find_elements_by_xpath(
-        "//div[@class='fc-comment-list']/div[@class='main-comment-item']/div[@class='content']/div["
-        "@class='fc-comment-item']")
-    comments = list()
-    comment = Comment()
-    for i in fc_comment_list:
-        # 分割出评论floor，user_name，text
-        str = i.text.split("\n")
-        floor_user_name = str[0].split(" ")
-        comment.floor = floor_user_name[0][1:]
-        comment.user_name = floor_user_name[1]
-        str = str[1:-2]
-        comment.text = ""
-        for j in str:
-            comment.text = comment.text + j + "\n"
-        comment.text = comment.text[:-1]
-        comments.append(copy.deepcopy(comment))
+def get_result_page(url):
+    header = {'Host': 'www.acfun.cn',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:69.0) Gecko/20100101 Firefox/69.0',
+              'Accept': 'application/json, text/plain, */*',
+              'Accept-Encoding': 'gzip, deflate, br',
+              'Accept-Language': 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2',
+              'Connection': 'keep-alive',
+              'DNT': '1',
+              'Referer': 'https://www.acfun.cn/a/ac11301146',
+              'TE': 'Trailers'
+    }
+    data = None
+    rq = request.Request(url, data=data, headers=header)
+    res = request.urlopen(rq)
+    respoen = res.read()
+    # 解决乱码问题
+    respoen = gzip.decompress(respoen)
+    result = str(respoen, encoding="utf-8")
+    return result
 
+
+def main():
+    url = 'https://www.acfun.cn/rest/pc-direct/comment/listByFloor?sourceId=11301146&sourceType=3&page=1&pivotCommentId=0&newPivotCommentId=0'
+    result = get_result_page(url)
+    # 解析评论json
+    js = json.loads(result)
+    b = 2
     a = 1
 
 
