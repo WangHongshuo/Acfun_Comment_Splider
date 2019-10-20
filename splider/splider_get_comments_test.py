@@ -5,7 +5,7 @@ import time
 import math
 
 
-class Comment:
+class CommentTest:
     # comment id
     cid = ""
     # comment floor
@@ -55,7 +55,7 @@ def main():
 
     url_template = 'https://www.acfun.cn/rest/pc-direct/comment/listByFloor?sourceId={_aid}&sourceType=3&page={_page}&pivotCommentId=0&newPivotCommentId=0&_ts={_ts}'
     user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:69.0) Gecko/20100101 Firefox/69.0'
-    aid = 11165378
+    aid = 11417835
     page = 1
     ts = int(math.floor(time.time() * 1000))
     url = url_template.format(_aid = aid, _page = page, _ts = str(ts))
@@ -79,7 +79,7 @@ def main():
             # js['commentsMap']里包含引用的楼层，js['commentIds']为该page每层楼最底层评论的cid
             for cid in js['commentIds']:
                 dic_comment = dic_comments_map['c' + str(cid)]
-                comment_list.append(Comment(dic_comment['cid'], dic_comment['floor'], dic_comment['userName'], dic_comment['content'], aid, dic_comment['userId']))
+                comment_list.append(CommentTest(dic_comment['cid'], dic_comment['floor'], dic_comment['userName'], dic_comment['content'], aid, dic_comment['userId']))
             curr_page = curr_page + 1
 
             ts = int(math.floor(time.time() * 1000))
@@ -87,6 +87,8 @@ def main():
             result = get_result_page(url, user_agent, referer)
             js = json.loads(result)
     print('采集时间: ' + str(time.time() - start_time) + 's')
+
+    # 存入comments sql的数据：cid（唯一）, aid, floor, uid, content
     for c in comment_list:
         print(c)
 

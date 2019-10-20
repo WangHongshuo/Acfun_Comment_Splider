@@ -2,10 +2,9 @@ from urllib import request
 import json
 import gzip
 from email.utils import formatdate
-import copy
 
 
-class Article:
+class ArticleTest:
     aid = ""
     title = ""
     comment_count = ""
@@ -16,7 +15,8 @@ class Article:
         self.comment_count = comment_count
 
     def __str__(self):
-        return 'https://www.acfun.cn/a/ac' + str(self.aid) + '\n' + self.title + '\n' + 'comment_count: ' + str(self.comment_count) + '\n'
+        return 'https://www.acfun.cn/a/ac' + str(self.aid) + '\n' + self.title + '\n' + 'comment_count: ' + str(
+            self.comment_count) + '\n'
 
 
 def get_result_page(url, user_agent, referer):
@@ -41,6 +41,7 @@ def get_result_page(url, user_agent, referer):
     result = str(respoen, encoding="utf-8")
     return result
 
+
 def get_realmIds_by_list_id(_list_id):
     # 110 - 综合 - 5,22,3,4
     if _list_id == 110:
@@ -51,6 +52,7 @@ def get_realmIds_by_list_id(_list_id):
     # 64 - 游戏 - 8,11,43,44,45,46
     if _list_id == 64:
         return '8%2C11%2C43%2C44%2C45%2C46'
+
 
 def main():
     pageNo = 1
@@ -63,7 +65,7 @@ def main():
     periodType = -1
     url = 'https://webapi.acfun.cn/query/article/list?pageNo={_pageNo}&size=10&realmIds={' \
           '_realmIds}&originalOnly=false&orderType={_orderType}&periodType={_periodType}&filterTitleImage=true '
-    url = url.format(_pageNo = pageNo, _realmIds = realmIds, _orderType = orderType, _periodType = periodType)
+    url = url.format(_pageNo=pageNo, _realmIds=realmIds, _orderType=orderType, _periodType=periodType)
     user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:69.0) Gecko/20100101 Firefox/69.0'
     referer = 'https://www.acfun.cn/v/list' + str(list_id) + '/index.htm'
     result = get_result_page(url, user_agent, referer)
@@ -79,11 +81,11 @@ def main():
         page_No = data['pageNo']
         for a in dic_article_list:
             # str深浅拷贝问题
-            article_list.append(Article(a['id'], a['title'], a['comment_count']))
+            article_list.append(ArticleTest(a['id'], a['title'], a['comment_count']))
 
+    # 存入 articles sql的内容：aid（唯一）, comment_count（用于判断是否更新comments sql）
     for a in article_list:
         print(a)
-
 
     b = 2
     a = 1
