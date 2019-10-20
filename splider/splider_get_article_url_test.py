@@ -73,7 +73,7 @@ def main():
     js = json.loads(result)
     article_list = list()
     data = None
-    if (js['message'] == 'OK' and js['code'] == 200):
+    if js['message'] == 'OK' and js['code'] == 200:
         data = js['data']
     if data != None:
         total_page = data['totalPage']
