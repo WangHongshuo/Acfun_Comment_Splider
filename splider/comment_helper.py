@@ -8,11 +8,10 @@ import math
 
 class Comment:
 
-    def __init__(self, cid, floor_num, user_name, content, aid, uid):
+    def __init__(self, cid, floor_num, content, aid, uid):
         # comment id
         self.cid = cid
         self.floor_num = floor_num
-        self.user_name = user_name
         # user id
         self.uid = uid
         self.content = content
@@ -21,7 +20,7 @@ class Comment:
 
     def __str__(self):
         return 'aid: ' + str(self.aid) + ' floor: ' + str(self.floor_num) + ' cid: ' + str(self.cid) + ' uid: ' + str(
-            self.uid) + ' user_name: ' + self.user_name + '\n' + 'content: ' + self.content + '\n'
+            self.uid) + '\n' + 'content: ' + self.content + '\n'
 
 
 def get_comments_json(url, header):
@@ -40,11 +39,13 @@ class CommentHelper:
     url_template = 'https://www.acfun.cn/rest/pc-direct/comment/listByFloor?sourceId={_aid}&sourceType=3&' \
                    'page={_page}&pivotCommentId=0&newPivotCommentId=0&_ts={_ts}'
 
+    __comments_js_list = list()
+
     def __init__(self):
         self.header_helper = HeaderHelper()
         return
 
-    def get_comments(self, aid):
+    def get_comments_by_aid(self, aid):
         self.comments_list.clear()
         ts = int(math.floor(time.time() * 1000))
         url = self.url_template.format(_aid=aid, _page=1, _ts=ts)
@@ -63,8 +64,7 @@ class CommentHelper:
                 # js['commentsMap']里包含引用的楼层，js['commentIds']为该page每层楼最底层评论的cid
                 for cid in js['commentIds']:
                     dic_comment = dic_comments_map['c' + str(cid)]
-                    self.comments_list.append(Comment(dic_comment['cid'], dic_comment['floor'], dic_comment['userName'],
-                                                      dic_comment['content'], aid, dic_comment['userId']))
+                    self.comments_list.append(Comment(dic_comment['cid'], dic_comment['floor'], dic_comment['content'], aid, dic_comment['userId']))
                 curr_page = curr_page + 1
 
                 ts = int(math.floor(time.time() * 1000))

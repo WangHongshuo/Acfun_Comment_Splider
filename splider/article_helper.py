@@ -1,8 +1,8 @@
-from urllib import request
-import json
 import gzip
-from email.utils import formatdate
+import json
+from urllib import request
 
+from url_helper import HeaderHelper, ArticlesUrlHelper
 
 class Article:
 
@@ -15,20 +15,37 @@ class Article:
 
     def __str__(self):
         return 'https://www.acfun.cn/a/ac' + str(self.aid) + '\n' + 'comment_count: ' + str(self.comment_count) + \
-               'last_floor: ' + str(self.last_floor) + '\n' + self.title + '\n '
+               ' last_floor: ' + str(self.last_floor) + '\n' + self.title + '\n '
 
 
 class ArticleHelper:
     article_list = list()
 
+    __article_url_helper = ArticlesUrlHelper()
+    __header_helper = HeaderHelper()
+    __js = dict()
+
     def __init__(self):
         return
 
-    def get_article_list_by_json(self, js):
+    def get_article_list(self, list_id, realm_ids, user_agent=None):
+        header = self.__header_helper.get_article_header(list_id, user_agent)
+        article_url = self.__article_url_helper.get_url(realm_ids)
+        data = None
+        rq = request.Request(article_url, data=data, headers=header)
+        res = request.urlopen(rq)
+        respoen = res.read()
+        # 解决乱码问题
+        respoen = gzip.decompress(respoen)
+        result = str(respoen, encoding="utf-8")
+        self.__js = json.loads(result)
+        return self.__get_article_list_by_json()
+
+    def __get_article_list_by_json(self):
         self.article_list.clear()
         data = None
-        if js['message'] == 'OK' and js['code'] == 200:
-            data = js['data']
+        if self.__js['message'] == 'OK' and self.__js['code'] == 200:
+            data = self.__js['data']
         if data != None:
             total_page = data['totalPage']
             dic_article_list = data['articleList']

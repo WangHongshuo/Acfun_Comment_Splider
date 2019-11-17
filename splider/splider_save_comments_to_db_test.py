@@ -45,25 +45,12 @@ def main():
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    article_url_helper = ArticlesUrlHelper()
-    header_helper = HeaderHelper()
-    user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:69.0) Gecko/20100101 Firefox/69.0'
-
-    header = header_helper.get_article_header(ARTICLE_ZONE[0].get('list_id'), user_agent)
-    article_url = article_url_helper.get_url(ARTICLE_ZONE[0].get('realmIds'))
-    data = None
-    rq = request.Request(article_url, data=data, headers=header)
-    res = request.urlopen(rq)
-    respoen = res.read()
-    # 解决乱码问题
-    respoen = gzip.decompress(respoen)
-    result = str(respoen, encoding="utf-8")
-    js = json.loads(result)
     article_helper = ArticleHelper()
-    article_list = article_helper.get_article_list_by_json(js)
+    article_list = article_helper.get_article_list(ARTICLE_ZONE[0].get('list_id'), ARTICLE_ZONE[0].get('realmIds'))
     comment_helper = CommentHelper()
+
     for al in article_list:
-        comment_list = comment_helper.get_comments(al.aid)
+        comment_list = comment_helper.get_comments_by_aid(al.aid)
         for cl in comment_list:
             # 封禁的用户评论仍然可被爬，且cid = 0，cid为主键
             if cl.cid == 0:
