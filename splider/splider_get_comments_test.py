@@ -6,7 +6,7 @@ def main():
     start_time = time.time()
 
     comment_helper = CommentHelper()
-    comment_helper.get_comments_by_aid(11677289)
+    comment_helper.get_all_comments_by_aid(11735561)
 
     print('采集时间: ' + str(time.time() - start_time) + 's')
 

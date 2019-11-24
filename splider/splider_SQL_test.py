@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
 
+
 # Comments表
 class SQLComments(Base):
     __tablename__ = "comments"
@@ -21,6 +22,7 @@ class SQLComments(Base):
         tpl = "comments(cid = {}, aid = {}, floor_num = {}, uid = {}, content = {}"
         return tpl.format(self.cid, self.aid, self.floor_num, self.uid, self.content)
 
+
 # articles表
 class SQLArticles(Base):
     __tablename__ = "articles"
@@ -31,6 +33,7 @@ class SQLArticles(Base):
     def __repr__(self):
         tpl = "articles(aid = {}, comment_count = {}, last_floor = {}"
         return tpl.format(self.aid, self.comment_count, self.last_floor)
+
 
 # 判断数据库是否存在
 def is_database_exist(databases, database_name):

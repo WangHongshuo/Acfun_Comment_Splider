@@ -8,7 +8,7 @@ import math
 
 class Comment:
 
-    def __init__(self, cid, floor_num, content, aid, uid):
+    def __init__(self, cid: int, floor_num: int, content: str, aid: int, uid: int) -> None:
         # comment id
         self.cid = cid
         self.floor_num = floor_num
@@ -23,51 +23,88 @@ class Comment:
             self.uid) + '\n' + 'content: ' + self.content + '\n'
 
 
-def get_comments_json(url, header):
-    data = None
-    rq = request.Request(url, data=data, headers=header)
-    res = request.urlopen(rq)
-    respoen = res.read()
-    # 解决乱码问题
-    respoen = gzip.decompress(respoen)
-    result = str(respoen, encoding="utf-8")
-    return json.loads(result)
-
-
 class CommentHelper:
     comments_list = list()
     url_template = 'https://www.acfun.cn/rest/pc-direct/comment/listByFloor?sourceId={_aid}&sourceType=3&' \
                    'page={_page}&pivotCommentId=0&newPivotCommentId=0&_ts={_ts}'
 
     __comments_js_list = list()
+    __is_updated = False
 
     def __init__(self):
         self.header_helper = HeaderHelper()
         return
 
-    def get_comments_by_aid(self, aid):
-        self.comments_list.clear()
-        ts = int(math.floor(time.time() * 1000))
-        url = self.url_template.format(_aid=aid, _page=1, _ts=ts)
+    def __get_comments_json(self, aid: int, curr_page: int, ts: int = None) -> dict:
+        """
+获取指定页评论json
+        :param aid: 文章ID
+        :param curr_page: 当前页面号
+        :param ts: 时间戳，默认为当前时间
+        :return: 解析好的json
+        """
+        if ts is None:
+            ts = int(math.floor(time.time() * 1000))
         header = self.header_helper.get_comments_header(aid)
-        js = get_comments_json(url, header)
-        # 采集方式在某些情况（如大量新评论出现）会导致评论漏采
+        url = self.url_template.format(_aid=aid, _page=curr_page, _ts=ts)
+        data = None
+        rq = request.Request(url, data=data, headers=header)
+        res = request.urlopen(rq)
+        respond = res.read()
+        # 解决乱码问题
+        respond = gzip.decompress(respond)
+        result = str(respond, encoding="utf-8")
+        return json.loads(result)
+
+    def __get_comments_js_list(self, aid: int) -> list:
+        """
+获取指定评论页所有json
+        :param aid: 文章ID
+        :return: 解析好的json list
+        """
+        self.__comments_js_list.clear()
+        # 首次请求确认评论总页数
+        js = self.__get_comments_json(aid, 1)
         if js['totalCount'] > 0:
-            dic_comments_map = js['commentsMap']
             total_page_num = js['totalPage']
             curr_page = js['curPage']
+            # 暂存所有评论js
             while curr_page <= total_page_num:
-                # 读取curr_page和total_page_num
+                js = self.__get_comments_json(aid, curr_page)
+                self.__comments_js_list.append(js)
+                # 每次检查总页数是否变化
                 total_page_num = js['totalPage']
-                curr_page = js['curPage']
-                dic_comments_map = js['commentsMap']
-                # js['commentsMap']里包含引用的楼层，js['commentIds']为该page每层楼最底层评论的cid
-                for cid in js['commentIds']:
-                    dic_comment = dic_comments_map['c' + str(cid)]
-                    self.comments_list.append(Comment(dic_comment['cid'], dic_comment['floor'], dic_comment['content'], aid, dic_comment['userId']))
                 curr_page = curr_page + 1
+        return self.__comments_js_list
 
-                ts = int(math.floor(time.time() * 1000))
-                url = self.url_template.format(_aid=aid, _page=curr_page, _ts=ts)
-                js = get_comments_json(url, header)
+    def __get_comments_from_js(self, js: dict, aid: int, last_floor: int = 0) -> list:
+        """
+从解析好的json中获取评论
+        :param js: 解析好的json
+        :param aid: 文章ID
+        :param last_floor: 最后一个评论的楼层，解析终止条件
+        :return: 评论list
+        """
+        dic_comments_map = js['commentsMap']
+        # js['commentsMap']里包含引用的楼层，js['commentIds']为该page每层楼最底层评论的cid
+        for cid in js['commentIds']:
+            dic_comment = dic_comments_map['c' + str(cid)]
+            # 检查是否爬取到上次楼层
+            if dic_comment['floor'] == last_floor:
+                return self.comments_list
+            # 添加评论到list
+            self.comments_list.append(
+                Comment(dic_comment['cid'], dic_comment['floor'], dic_comment['content'], aid, dic_comment['userId']))
+        return self.comments_list
+
+    def get_all_comments_by_aid(self, aid: int) -> list:
+        """
+根据文章ID获取评论
+        :param aid: 文章ID
+        :return: 评论list
+        """
+        self.comments_list.clear()
+        self.__get_comments_js_list(aid)
+        for cjl in self.__comments_js_list:
+            self.comments_list = self.__get_comments_from_js(cjl, aid)
         return self.comments_list

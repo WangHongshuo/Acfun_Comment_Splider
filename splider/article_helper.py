@@ -4,9 +4,10 @@ from urllib import request
 
 from url_helper import HeaderHelper, ArticlesUrlHelper
 
+
 class Article:
 
-    def __init__(self, aid, comment_count, title, last_floor=0):
+    def __init__(self, aid: int, comment_count: int, title: str, last_floor: int = 0) -> None:
         # article id
         self.aid = aid
         self.comment_count = comment_count
@@ -28,20 +29,31 @@ class ArticleHelper:
     def __init__(self):
         return
 
-    def get_article_list(self, list_id, realm_ids, user_agent=None):
+    def get_article_list(self, list_id: int, realm_ids: int, user_agent: str = None) -> list:
+        """
+获取文章列表
+        :param list_id: 文章list_id，详见url_config.py
+        :param realm_ids: 领域realm_id，详见url_config.py
+        :param user_agent: user_agent
+        :return: 文章列表list
+        """
         header = self.__header_helper.get_article_header(list_id, user_agent)
         article_url = self.__article_url_helper.get_url(realm_ids)
         data = None
         rq = request.Request(article_url, data=data, headers=header)
         res = request.urlopen(rq)
-        respoen = res.read()
+        respond = res.read()
         # 解决乱码问题
-        respoen = gzip.decompress(respoen)
-        result = str(respoen, encoding="utf-8")
+        respond = gzip.decompress(respond)
+        result = str(respond, encoding="utf-8")
         self.__js = json.loads(result)
         return self.__get_article_list_by_json()
 
-    def __get_article_list_by_json(self):
+    def __get_article_list_by_json(self) -> list:
+        """
+通过json获取文章列表
+        :return: 文章列表list
+        """
         self.article_list.clear()
         data = None
         if self.__js['message'] == 'OK' and self.__js['code'] == 200:

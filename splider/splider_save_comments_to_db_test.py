@@ -14,6 +14,7 @@ from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
 
+
 # Comments表
 class SQLComments(Base):
     __tablename__ = "comments"
@@ -28,6 +29,7 @@ class SQLComments(Base):
         tpl = "comments(cid = {}, aid = {}, floor_num = {}, uid = {}, content = {}"
         return tpl.format(self.cid, self.aid, self.floor_num, self.uid, self.content)
 
+
 # articles表
 class SQLArticles(Base):
     __tablename__ = "articles"
@@ -38,6 +40,14 @@ class SQLArticles(Base):
     def __repr__(self):
         tpl = "articles(aid = {}, comment_count = {}, last_floor = {}"
         return tpl.format(self.aid, self.comment_count, self.last_floor)
+
+
+def get_article_last_comment_floor(session, aid: int) -> int:
+    ret = session.query(SQLArticles).filter_by(aid=str(aid)).all()
+    if len(ret) == 1:
+        return ret[0].last_floor
+    return -1
+
 
 def main():
     engine = create_engine('mysql+pymysql://root:q123456@localhost:3306/acfun_comments')
@@ -50,29 +60,28 @@ def main():
     comment_helper = CommentHelper()
 
     for al in article_list:
-        comment_list = comment_helper.get_comments_by_aid(al.aid)
+        # 爬取前检查数据库中是否存在
+
+        comment_list = comment_helper.get_all_comments_by_aid(al.aid)
         for cl in comment_list:
             # 封禁的用户评论仍然可被爬，且cid = 0，cid为主键
+
             if cl.cid == 0:
                 continue
-            session.add(SQLComments(cid = str(cl.cid),
-                                    aid = str(cl.aid),
-                                    floor_num = str(cl.floor_num),
-                                    uid = str(cl.uid),
-                                    content = str(cl.content)))
+            session.add(SQLComments(cid=str(cl.cid),
+                                    aid=str(cl.aid),
+                                    floor_num=str(cl.floor_num),
+                                    uid=str(cl.uid),
+                                    content=str(cl.content)))
         session.commit()
         al.last_floor = comment_list[0].floor_num
-        session.add(SQLArticles(aid = str(al.aid),
-                                comment_count = str(al.comment_count),
-                                last_floor = str(al.last_floor)))
+        session.add(SQLArticles(aid=str(al.aid),
+                                comment_count=str(al.comment_count),
+                                last_floor=str(al.last_floor)))
     session.commit()
 
-
-
-
-
-
     a = 1
+
 
 if __name__ == '__main__':
     main()
