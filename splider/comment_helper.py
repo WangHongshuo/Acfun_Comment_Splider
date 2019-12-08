@@ -84,6 +84,7 @@ class CommentHelper:
                 # 检查last_floor是在当前评论页内
                 first_floor_in_curr_page = self.__get_comment_floor_in_curr_page_js(js, 0)
                 last_floor_in_curr_page = self.__get_comment_floor_in_curr_page_js(js, -1)
+                # last_floor可能被删不存在，导致不满足在[first_floor_in_curr_page, last_floor_in_curr_page]之间
                 if first_floor_in_curr_page < last_floor or \
                    first_floor_in_curr_page >= last_floor >= last_floor_in_curr_page:
                     break

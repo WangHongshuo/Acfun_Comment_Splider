@@ -4,7 +4,7 @@ from sqlalchemy import Column
 # 支持 MySQL的UNSIGNED INTEGER
 from sqlalchemy.dialects.mysql import INTEGER, VARCHAR
 from sqlalchemy.orm import sessionmaker
-from SQL_helper import SQLHelper
+import re
 
 Base = declarative_base()
 
@@ -35,32 +35,32 @@ class SQLArticles(Base):
         tpl = "articles(aid = {}, comment_count = {}, last_floor = {}"
         return tpl.format(self.aid, self.comment_count, self.last_floor)
 
+# SQLHelper整体应考虑防注入
+class SQLHelper:
+    __engine = None
+    __login_cmd = 'mysql+pymysql://{_username}:{_password}@localhost:3306/{_database_name}'
+    __username = str()
+    __password = str()
 
-# 判断数据库是否存在
-def is_database_exist(databases, database_name):
-    for d in databases:
-        if (database_name == d._row[0]):
-            return True
-    return False
+    def __init__(self):
+        return
 
+    def __init__(self, username, password):
+        self.__username = username
+        self.__password = password
+        self.__engine = create_engine(self.__login_cmd.format(_username=username, _password=password, _database_name=''))
+        return
 
-def main():
-    sql_helper = SQLHelper('哈哈', '321dfe')
+    def __check_database(self):
+        ret = self.__engine.execute("show databases")
+        databases = ret.fetchall();
+        if not self.__is_database_exist(databases, 'acfun_comments'):
+            ret = self.__engine.execute("create database acfun_comments")
+        login_cmd = self.__login_cmd.format(_username=self.__username, _password=self.__password, _database_name='acfun_comments')
+        self.__engine = create_engine(login_cmd)
 
-    engine = create_engine('mysql+pymysql://root:q123456@localhost:3306/')
-
-    # 判断数据库是否存在
-    ret = engine.execute("show databases")
-    databases = ret.fetchall();
-    if not is_database_exist(databases, 'acfun_comments'):
-        ret = engine.execute("create database acfun_comments")
-    engine = create_engine('mysql+pymysql://root:q123456@localhost:3306/acfun_comments')
-
-    # 创建comments表和articles表
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    Base.metadata.create_all(engine)
-
-
-if __name__ == '__main__':
-    main()
+    def __is_database_exist(self, databases, database_name):
+        for d in databases:
+            if database_name == d._row[0]:
+                return True
+        return False
