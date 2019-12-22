@@ -7,16 +7,18 @@ from url_helper import HeaderHelper, ArticlesUrlHelper
 
 class Article:
 
-    def __init__(self, aid: int, comment_count: int, title: str, last_floor: int = 0) -> None:
+    def __init__(self, aid: int, comment_count: int, title: str, latest_comment_time: int, latest: int = 0) -> None:
         # article id
         self.aid = aid
         self.comment_count = comment_count
         self.title = title
-        self.last_floor = last_floor
+        self.latest_floor = latest
+        self.latest_comment_time = latest_comment_time
 
     def __str__(self):
         return 'https://www.acfun.cn/a/ac' + str(self.aid) + '\n' + 'comment_count: ' + str(self.comment_count) + \
-               ' last_floor: ' + str(self.last_floor) + '\n' + self.title + '\n '
+               ' latest_floor: ' + str(self.latest_floor) + ' latest_comment_time: ' + str(self.latest_comment_time) + \
+               '\n' + self.title + '\n '
 
 
 class ArticleHelper:
@@ -64,5 +66,5 @@ class ArticleHelper:
             page_No = data['pageNo']
             for a in dic_article_list:
                 # str深浅拷贝问题
-                self.article_list.append(Article(a['id'], a['comment_count'], a['title']))
+                self.article_list.append(Article(a['id'], a['comment_count'], a['title'], a['latest_comment_time']))
         return self.article_list

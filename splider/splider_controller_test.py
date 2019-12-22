@@ -9,7 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column
 # 支持 MySQL的UNSIGNED INTEGER
-from sqlalchemy.dialects.mysql import INTEGER, VARCHAR
+from sqlalchemy.dialects.mysql import INTEGER, VARCHAR, BIGINT
 from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
@@ -18,11 +18,11 @@ Base = declarative_base()
 # Comments表
 class SQLComments(Base):
     __tablename__ = "comments"
-    cid = Column(INTEGER(unsigned=True), autoincrement=False, primary_key=True)
+    cid = Column(BIGINT(unsigned=True), autoincrement=False, primary_key=True)
     # 使用server_default='0'设置默认值为0，需要是字符串
-    aid = Column(INTEGER(unsigned=True), nullable=False, server_default='0')
+    aid = Column(BIGINT(unsigned=True), nullable=False, server_default='0')
     floor_num = Column(INTEGER(unsigned=True), nullable=False, server_default='0')
-    uid = Column(INTEGER(unsigned=True), nullable=False, server_default='0')
+    uid = Column(BIGINT(unsigned=True), nullable=False, server_default='0')
     content = Column(VARCHAR(1000), nullable=True)
 
     def __repr__(self):
@@ -33,13 +33,14 @@ class SQLComments(Base):
 # articles表
 class SQLArticles(Base):
     __tablename__ = "articles"
-    aid = Column(INTEGER(unsigned=True), autoincrement=False, primary_key=True)
+    aid = Column(BIGINT(unsigned=True), autoincrement=False, primary_key=True)
     comment_count = Column(INTEGER(unsigned=True), nullable=False, server_default='0')
-    last_floor = Column(INTEGER(unsigned=True), nullable=False, server_default='0')
+    latest_floor = Column(INTEGER(unsigned=True), nullable=False, server_default='0')
+    latest_comment_time = Column(BIGINT(unsigned=True), nullable=False, server_default='0')
 
     def __repr__(self):
-        tpl = "articles(aid = {}, comment_count = {}, last_floor = {}"
-        return tpl.format(self.aid, self.comment_count, self.last_floor)
+        tpl = "articles(aid = {}, comment_count = {}, latest_floor = {}"
+        return tpl.format(self.aid, self.comment_count, self.latest_floor, self.latest_comment_time)
 
 
 def get_article_last_comment_floor(session, aid: int) -> int:
@@ -74,10 +75,13 @@ def main():
                                     uid=str(cl.uid),
                                     content=str(cl.content)))
         session.commit()
-        al.last_floor = comment_list[0].floor_num
+        al.latest_floor = comment_list[0].floor_num
         session.add(SQLArticles(aid=str(al.aid),
                                 comment_count=str(al.comment_count),
-                                last_floor=str(al.last_floor)))
+                                latest_floor=str(al.latest_floor),
+                                latest_comment_time=str(al.latest_comment_time)))
+        break
+
     session.commit()
 
     a = 1
