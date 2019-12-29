@@ -7,12 +7,12 @@ from url_helper import HeaderHelper, ArticlesUrlHelper
 
 class Article:
 
-    def __init__(self, aid: int, comment_count: int, title: str, latest_comment_time: int, latest: int = 0) -> None:
+    def __init__(self, aid: int, comment_count: int, title: str, latest_comment_time: int, latest_floor: int = 0) -> None:
         # article id
         self.aid = aid
         self.comment_count = comment_count
         self.title = title
-        self.latest_floor = latest
+        self.latest_floor = latest_floor
         self.latest_comment_time = latest_comment_time
 
     def __str__(self):

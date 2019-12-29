@@ -1,6 +1,6 @@
 from url_helper import HeaderHelper, ArticlesUrlHelper
 from url_config import ARTICLE_ZONE
-from article_helper import ArticleHelper
+from article_helper import ArticleHelper, Article
 from comment_helper import CommentHelper
 from urllib import request
 import json
@@ -61,27 +61,45 @@ def main():
     comment_helper = CommentHelper()
 
     for al in article_list:
-        # 爬取前检查数据库中是否存在
+        # 爬取前检查数据库中是否存在article信息，和是否需要更新
+        al = Article(12190119, 27, '1', 1577634368000, 27)
+        ret = session.query(SQLArticles).filter(SQLArticles.aid == al.aid).scalar()
+        # 不存在则新建
+        if ret is None:
+            comment_list = comment_helper.get_all_comments_by_aid(al.aid)
+            for cl in comment_list:
+                # 封禁的用户评论仍然可被爬，且cid = 0，cid为主键
+                if cl.cid == 0:
+                    continue
+                session.add(SQLComments(cid=str(cl.cid),
+                                        aid=str(cl.aid),
+                                        floor_num=str(cl.floor_num),
+                                        uid=str(cl.uid),
+                                        content=str(cl.content)))
+            al.latest_floor = comment_list[0].floor_num
+            print(al)
+            session.add(SQLArticles(aid=str(al.aid),
+                                    comment_count=str(al.comment_count),
+                                    latest_floor=str(al.latest_floor),
+                                    latest_comment_time=str(al.latest_comment_time)))
+        elif ret.latest_comment_time <= al.latest_comment_time:
+            comment_list = comment_helper.get_new_comments_by_aid(al.aid, al.latest_floor)
+            for cl in comment_list:
+                if cl.cid == 0:
+                    continue
+                session.add(SQLComments(cid=str(cl.cid),
+                                        aid=str(cl.aid),
+                                        floor_num=str(cl.floor_num),
+                                        uid=str(cl.uid),
+                                        content=str(cl.content)))
+            al.latest_floor = comment_list[0].floor_num
+            ret = session.query(SQLArticles).filter(SQLArticles.aid == al.aid).update(
+                {SQLArticles.comment_count: ret.comment_count + len(cl),
+                 SQLArticles.latest_floor: al.latest_floor,
+                 SQLArticles.latest_comment_time: al.latest_comment_time}
+            )
 
-        comment_list = comment_helper.get_all_comments_by_aid(al.aid)
-        for cl in comment_list:
-            # 封禁的用户评论仍然可被爬，且cid = 0，cid为主键
-
-            if cl.cid == 0:
-                continue
-            session.add(SQLComments(cid=str(cl.cid),
-                                    aid=str(cl.aid),
-                                    floor_num=str(cl.floor_num),
-                                    uid=str(cl.uid),
-                                    content=str(cl.content)))
-        session.commit()
-        al.latest_floor = comment_list[0].floor_num
-        session.add(SQLArticles(aid=str(al.aid),
-                                comment_count=str(al.comment_count),
-                                latest_floor=str(al.latest_floor),
-                                latest_comment_time=str(al.latest_comment_time)))
         break
-
     session.commit()
 
     a = 1

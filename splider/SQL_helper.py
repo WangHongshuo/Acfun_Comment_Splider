@@ -83,7 +83,6 @@ class SQLHelper:
     def __create_session(self):
         self.__session = sessionmaker(bind=self.__engine)
 
-    # 存在问题：需要获取评论js才可以获取最后评论楼层
     def save_article_list(self, article_list):
 
         return
