@@ -12,7 +12,7 @@ def main():
     print('采集时间: ' + str(time.time() - start_time) + 's')
 
     # 存入comments sql的数据：cid（唯一）, aid, floor, uid, content
-    for c in comment_helper.comments_list:
+    for c in comment_helper.comments:
         print(c)
 
     b = 2

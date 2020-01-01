@@ -8,23 +8,29 @@ import math
 
 class Comment:
 
-    def __init__(self, cid: int, floor_num: int, content: str, aid: int, uid: int) -> None:
+    def __init__(self, cid: int, floor_num: int, content: str, uid: int) -> None:
         # comment id
         self.cid = cid
         self.floor_num = floor_num
         # user id
         self.uid = uid
         self.content = content
-        # article id
-        self.aid = aid
 
     def __str__(self):
-        return 'aid: ' + str(self.aid) + ' floor: ' + str(self.floor_num) + ' cid: ' + str(self.cid) + ' uid: ' + str(
+        return ' floor: ' + str(self.floor_num) + ' cid: ' + str(self.cid) + ' uid: ' + str(
             self.uid) + '\n' + 'content: ' + self.content + '\n'
+
+class Comments:
+    data = list()
+    article_id = 0
+
+    def init(self):
+        self.data.clear()
+        self.article_id = 0
 
 
 class CommentHelper:
-    comments_list = list()
+    comments = Comments()
     url_template = 'https://www.acfun.cn/rest/pc-direct/comment/listByFloor?sourceId={_aid}&sourceType=3&' \
                    'page={_page}&pivotCommentId=0&newPivotCommentId=0&_ts={_ts}'
 
@@ -107,11 +113,13 @@ class CommentHelper:
             dic_comment = dic_comments_map['c' + str(cid)]
             # 检查是否爬取到上次楼层（该楼层可能被删）
             if dic_comment['floor'] <= last_floor:
-                return self.comments_list
-            # 添加评论到list
-            self.comments_list.append(
-                Comment(dic_comment['cid'], dic_comment['floor'], dic_comment['content'], aid, dic_comment['userId']))
-        return self.comments_list
+                return self.comments
+            # 添加评论到list, cid == 0不保存
+            if dic_comment['cid'] == 0:
+                continue
+            self.comments.data.append(
+                Comment(dic_comment['cid'], dic_comment['floor'], dic_comment['content'], dic_comment['userId']))
+        return self.comments
 
     def get_all_comments_by_aid(self, aid: int) -> list:
         """
@@ -119,11 +127,12 @@ class CommentHelper:
         :param aid: 文章ID
         :return: 评论list
         """
-        self.comments_list.clear()
+        self.comments.init()
+        self.comments.article_id = aid
         self.__get_comments_js_list(aid)
         for cjl in self.__comments_js_list:
-            self.comments_list = self.__get_comments_from_js(cjl, aid)
-        return self.comments_list
+            self.comments = self.__get_comments_from_js(cjl, aid)
+        return self.comments
 
     def get_new_comments_by_aid(self, aid: int, last_floor: int) -> list:
         """
@@ -132,8 +141,9 @@ class CommentHelper:
         :param last_floor: 上次抓取到的最后楼层
         :return: 新增评论list
         """
-        self.comments_list.clear()
+        self.comments.init()
+        self.comments.article_id = aid
         self.__get_comments_js_list(aid, last_floor)
         for cjl in self.__comments_js_list:
-            self.comments_list = self.__get_comments_from_js(cjl, aid, last_floor)
-        return self.comments_list
+            self.comments = self.__get_comments_from_js(cjl, aid, last_floor)
+        return self.comments
