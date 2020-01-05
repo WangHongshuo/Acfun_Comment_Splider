@@ -17,8 +17,9 @@ class Comment:
         self.content = content
 
     def __str__(self):
-        return ' floor: ' + str(self.floor_num) + ' cid: ' + str(self.cid) + ' uid: ' + str(
-            self.uid) + '\n' + 'content: ' + self.content + '\n'
+        return 'floor: ' + str(self.floor_num) + ' cid: ' + str(self.cid) + ' uid: ' + str(
+            self.uid) + '\n' + 'content: ' + self.content + '\n\n'
+
 
 class Comments:
     data = list()
@@ -28,6 +29,20 @@ class Comments:
         self.data.clear()
         self.article_id = 0
 
+    def __str__(self):
+        res = str()
+        for d in self.data:
+            res += d.__str__()
+        res += 'Article ID: ' + str(self.article_id)
+        return res
+
+    def latest_floor(self):
+        if len(self.data) == 0:
+            return -1
+        return self.data[0].floor_num
+
+    def size(self):
+        return len(self.data)
 
 class CommentHelper:
     comments = Comments()
@@ -92,14 +107,14 @@ class CommentHelper:
                 last_floor_in_curr_page = self.__get_comment_floor_in_curr_page_js(js, -1)
                 # last_floor可能被删不存在，导致不满足在[first_floor_in_curr_page, last_floor_in_curr_page]之间
                 if first_floor_in_curr_page < last_floor or \
-                   first_floor_in_curr_page >= last_floor >= last_floor_in_curr_page:
+                        first_floor_in_curr_page >= last_floor >= last_floor_in_curr_page:
                     break
                 # 每次检查总页数是否变化
                 total_page_num = js['totalPage']
                 curr_page = curr_page + 1
         return self.__comments_js_list
 
-    def __get_comments_from_js(self, js: dict, aid: int, last_floor: int = 0) -> list:
+    def __get_comments_from_js(self, js: dict, aid: int, last_floor: int = 0) -> Comments:
         """
 从解析好的json中获取评论
         :param js: 解析好的json
@@ -121,29 +136,16 @@ class CommentHelper:
                 Comment(dic_comment['cid'], dic_comment['floor'], dic_comment['content'], dic_comment['userId']))
         return self.comments
 
-    def get_all_comments_by_aid(self, aid: int) -> list:
+    def get_comments_by_aid(self, aid: int, last_floor: int = 0) -> Comments:
         """
-根据文章ID获取评论
+根据文章ID获取评论，返回last_floor楼层后面的评论
         :param aid: 文章ID
-        :return: 评论list
+        :param last_floor: 上次最新楼层
+        :return: 返回last_floor楼层后的评论list
         """
         self.comments.init()
         self.comments.article_id = aid
         self.__get_comments_js_list(aid)
-        for cjl in self.__comments_js_list:
-            self.comments = self.__get_comments_from_js(cjl, aid)
-        return self.comments
-
-    def get_new_comments_by_aid(self, aid: int, last_floor: int) -> list:
-        """
-根据上次更新的楼层增量式抓取新增楼层评论list
-        :param aid: 文章ID
-        :param last_floor: 上次抓取到的最后楼层
-        :return: 新增评论list
-        """
-        self.comments.init()
-        self.comments.article_id = aid
-        self.__get_comments_js_list(aid, last_floor)
         for cjl in self.__comments_js_list:
             self.comments = self.__get_comments_from_js(cjl, aid, last_floor)
         return self.comments

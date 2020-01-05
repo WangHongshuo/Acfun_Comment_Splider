@@ -42,6 +42,7 @@ class SQLArticles(Base):
         tpl = "articles(aid = {}, comment_count = {}, latest_floor = {}"
         return tpl.format(self.aid, self.comment_count, self.latest_floor, self.latest_comment_time)
 
+
 def save_comments_to_DB(session, comments):
     for cl in comments.data:
         # 封禁的用户评论仍然可被爬，且cid = 0，cid为主键
@@ -63,32 +64,31 @@ def main():
     article_helper = ArticleHelper()
     article_list = article_helper.get_article_list(ARTICLE_ZONE[0].get('list_id'), ARTICLE_ZONE[0].get('realmIds'))
     comment_helper = CommentHelper()
-
+    comments = None
     for al in article_list:
         # 爬取前检查数据库中是否存在article信息，和是否需要更新
         al = Article(12190119, 26, '1', 1577634368000, 26)
         ret = session.query(SQLArticles).filter(SQLArticles.aid == al.aid).scalar()
         # 不存在则新建
         if ret is None:
-            comments = comment_helper.get_all_comments_by_aid(al.aid)
-            save_comments_to_DB(session, comments)
-            al.latest_floor = comments.data[0].floor_num
+            comments = comment_helper.get_comments_by_aid(al.aid, 0)
+            al.latest_floor = comments.latest_floor()
             session.add(SQLArticles(aid=str(al.aid),
                                     comment_count=str(al.comment_count),
                                     latest_floor=str(al.latest_floor),
                                     latest_comment_time=str(al.latest_comment_time)))
-        elif ret.latest_comment_time <= al.latest_comment_time:
-            comments = comment_helper.get_new_comments_by_aid(al.aid, al.latest_floor)
-            save_comments_to_DB(session, comments)
-            al.latest_floor = comments.data[0].floor_num
+        # 数据库中评论上次更新时间落后于最新时间则更新
+        elif ret.latest_comment_time < al.latest_comment_time:
+            comments = comment_helper.get_comments_by_aid(al.aid, ret.latest_floor)
             ret = session.query(SQLArticles).filter(SQLArticles.aid == al.aid).update(
-                {SQLArticles.comment_count: ret.comment_count + len(comments.data),
-                 SQLArticles.latest_floor: al.latest_floor,
+                {SQLArticles.comment_count: ret.comment_count + comments.size(),
+                 SQLArticles.latest_floor: comments.latest_floor(),
                  SQLArticles.latest_comment_time: al.latest_comment_time}
             )
+        save_comments_to_DB(session, comments)
         print(comments)
         break
-    # session.commit()
+    session.commit()
 
     a = 1
 
